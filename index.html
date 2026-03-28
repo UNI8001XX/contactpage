@@ -39,16 +39,6 @@
         
         <p style="font-size: 11px; margin-top: 20px; color: #888;">Thank you for visiting!</p>
     </div>
-  <script>
-  const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
-  const CHAT_ID = "5483999475";
-  const msg = `👀 New visitor on your landing page!\n🕐 ${new Date().toLocaleString()}\n🌍 ${navigator.language}\n💻 ${navigator.userAgent}`;
-​
-  fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
-  });
-</script>
+  
 </body>
 </html>

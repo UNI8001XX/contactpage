@@ -104,19 +104,20 @@
   <script>
   const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
   const CHAT_ID = "5483999475";
-      fetch("https://ipapi.co/json/")
+     fetch("https://ipapi.co/json/")
     .then(res => res.json())
     .then(geo => {
-  const msg = `👀 New visitor on your landing page!
+      const msg = `👀 New visitor on your landing page!
 🕐 ${new Date().toLocaleString()}
 🌍 ${geo.country_name}, ${geo.city}
 🔗 Referred from: ${document.referrer || 'Direct / Unknown'}`;
 
-  fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
-  });
+      fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+      });
+    });
 </script>
 </body>
 </html>

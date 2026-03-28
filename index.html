@@ -104,7 +104,10 @@
   <script>
   const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
   const CHAT_ID = "5483999475";
-  const msg = `👀 New visitor on your landing page!\n🕐 ${new Date().toLocaleString()}\n🌍 ${navigator.language}\n💻 ${navigator.userAgent}`;
+  const msg = `👀 New visitor on your landing page!
+🕐 ${new Date().toLocaleString()}
+🌍 ${geo.country_name}, ${geo.city}
+🔗 Referred from: ${document.referrer || 'Direct / Unknown'}`;
 
   fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",

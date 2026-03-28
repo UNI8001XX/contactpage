@@ -101,10 +101,11 @@
         
         <p style="font-size: 11px; margin-top: 20px; color: #888;">Thank you for visiting!</p>
     </div>
-  <script>
+ <script>
   const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
   const CHAT_ID = "5483999475";
-     fetch("https://ipapi.co/json/")
+
+  fetch("https://ipapi.co/json/")
     .then(res => res.json())
     .then(geo => {
       const msg = `👀 New visitor on your landing page!

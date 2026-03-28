@@ -1,3 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doron Zaccai | Nice to meet you!</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2589/2589175.png" type="image/x-icon">
+    <style>
+        :root { --primary: #ff4b2b; --secondary: #ff416c; --linkblue: #0077b5; }
+        
+        /* Changed height to min-height so it doesn't cut off on small screens */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0;
+            color: #333; 
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.95); 
+            padding: 30px; 
+            border-radius: 24px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+            text-align: center; 
+            width: 90%; 
+            max-width: 400px; /* Increased width slightly for 2 photos */
+            backdrop-filter: blur(10px); 
+        }
+
+        /* The Photo Section */
+        .photo-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-img {
+            width: 140px; 
+            height: 140px; 
+            object-fit: cover; 
+            border-radius: 15px;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 22px; margin-bottom: 5px; color: #1a1a1a; }
+        .contact-info { font-size: 15px; color: #444; margin: 5px 0; line-height: 1.4; }
+        
+        .audio-container { background: #f0f0f5; padding: 15px; border-radius: 15px; margin: 20px 0; }
+        audio { width: 100%; }
+
+        .btn { 
+            display: block; 
+            background: var(--linkblue); 
+            color: white; 
+            padding: 16px; 
             text-decoration: none; 
             border-radius: 12px; 
             font-weight: bold; 
@@ -12,12 +74,12 @@
 <body>
     <div class="card">
         <span class="tag">Welcome to my page</span>
-​
+
         <div class="photo-container">
             <img src="photo1.jpg" class="profile-img" alt="Doron 1">
             <img src="photo2.jpg" class="profile-img" alt="Doron 2">
         </div>
-​
+
         <h1>Doron (Ronny) Zaccai</h1>
         
         <div class="contact-info">
@@ -26,7 +88,7 @@
             <span style="font-size: 12px; color: #888;">(Both available on WhatsApp)</span><br>
             <strong>Email:</strong> doronzaccai@gmail.com
         </div>
-​
+
         <div class="audio-container">
             <p style="margin-bottom: 10px; font-weight: bold; font-size: 14px;">🔊 Please listen to my voice note:</p>
             <audio controls>
@@ -34,11 +96,21 @@
                 Your browser does not support the audio element.
             </audio>
         </div>
-​
+
         <a href="https://www.linkedin.com/in/doronzaccai/" target="_blank" class="btn">Connect on LinkedIn</a>
         
         <p style="font-size: 11px; margin-top: 20px; color: #888;">Thank you for visiting!</p>
     </div>
-  
+  <script>
+  const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
+  const CHAT_ID = "5483999475";
+  const msg = `👀 New visitor on your landing page!\n🕐 ${new Date().toLocaleString()}\n🌍 ${navigator.language}\n💻 ${navigator.userAgent}`;
+
+  fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+  });
+</script>
 </body>
 </html>

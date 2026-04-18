@@ -8,7 +8,6 @@
     <style>
         :root { --primary: #ff4b2b; --secondary: #ff416c; --linkblue: #0077b5; }
         
-        /* Changed height to min-height so it doesn't cut off on small screens */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
@@ -28,11 +27,10 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
             text-align: center; 
             width: 90%; 
-            max-width: 400px; /* Increased width slightly for 2 photos */
+            max-width: 400px; 
             backdrop-filter: blur(10px); 
         }
 
-        /* The Photo Section */
         .photo-container {
             display: flex;
             gap: 10px;
@@ -91,34 +89,78 @@
 
         <div class="audio-container">
             <p style="margin-bottom: 10px; font-weight: bold; font-size: 14px;">🔊 Please listen to my voice note:</p>
-            <audio controls>
+            <audio id="voiceNote" controls>
                 <source src="voicemessage.mp3" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
         </div>
 
-        <a href="https://www.linkedin.com/in/doronzaccai/" target="_blank" class="btn">Connect on LinkedIn</a>
+        <a href="https://www.linkedin.com/in/doronzaccai/" target="_blank" class="btn" id="linkedinBtn">Connect on LinkedIn</a>
         
         <p style="font-size: 11px; margin-top: 20px; color: #888;">Thank you for visiting!</p>
     </div>
- <script>
+
+<script>
   const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
   const CHAT_ID = "5483999475";
+
+  // Function to send the Telegram message
+  async function sendTelegram(message) {
+    return fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+    });
+  }
 
   fetch("https://ipapi.co/json/")
     .then(res => res.json())
     .then(geo => {
+      // 1. Bot & Data Center Filter
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isBot = /bot|crawler|spider|crawling|headless|slurp|bing/i.test(userAgent);
+      
+      // Filter out AWS (Ashburn), Google Cloud, Azure, etc.
+      const isDataCenter = /amazon|aws|google|microsoft|azure|digitalocean|oracle/i.test(geo.org || "");
+
+      if (isBot || isDataCenter) {
+        console.log("Bot or Data Center detected. No notification sent.");
+        return; 
+      }
+
+      // 2. Initial Visit Notification
       const msg = `👀 New visitor on your landing page!
 🕐 ${new Date().toLocaleString()}
 🌍 ${geo.country_name}, ${geo.city}
-🔗 Referred from: ${document.referrer || 'Direct / Unknown'}`;
+🏢 Network: ${geo.org || 'Unknown'}
+🔗 Referred: ${document.referrer || 'Direct'}`;
 
-      fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+      sendTelegram(msg);
+
+      // 3. Track Audio Play
+      const audioPlayer = document.getElementById('voiceNote');
+      let audioTracked = false; 
+
+      audioPlayer.addEventListener('play', () => {
+        if (!audioTracked) {
+          sendTelegram(`🔊 Someone is listening to your voice note! (${geo.city}, ${geo.country_code})`);
+          audioTracked = true; 
+        }
       });
-    });
+
+      // 4. Track LinkedIn Click
+      const linkedinBtn = document.getElementById('linkedinBtn');
+      let linkedinTracked = false;
+
+      linkedinBtn.addEventListener('click', () => {
+        if (!linkedinTracked) {
+          sendTelegram(`🔗 Someone clicked your LinkedIn profile! (${geo.city}, ${geo.country_code})`);
+          linkedinTracked = true;
+        }
+      });
+
+    })
+    .catch(err => console.error("Tracking error:", err));
 </script>
 </body>
 </html>

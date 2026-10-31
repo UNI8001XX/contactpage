@@ -147,12 +147,12 @@
     return BOT_ORG.test(geo.org || "");
   }
 
-  // One visit message per browser every 5 minutes (ignores quick refreshes)
+  // One visit message per browser every 30 minutes (ignores refreshes)
   function seenRecently() {
     if (/[?&]test\b/.test(location.search)) return false; // add ?test to the URL to bypass
     try {
       const last = Number(localStorage.getItem("lastVisitPing"));
-      if (last && Date.now() - last < 5 * 60 * 1000) return true;
+      if (last && Date.now() - last < 30 * 60 * 1000) return true;
       localStorage.setItem("lastVisitPing", String(Date.now()));
     } catch (e) {}
     return false;
@@ -162,24 +162,47 @@
     const where = location.hostname + location.pathname + location.search;
     const app = IN_APP.test(ua) ? "\n📱 In-app browser: " + (ua.match(IN_APP) || [""])[0] : "";
 
-    // 1. Visit notification: sent right away when the page loads
-    (async () => {
-      const geo = await getGeo();
-      if (isBadNetwork(geo)) {
-        console.log("Data center / Meta network. No notification sent.");
-        return;
-      }
-      if (seenRecently()) {
-        console.log("Same browser visited in the last 5 minutes. No notification sent.");
-        return;
-      }
-      sendDiscord(`👀 New visitor on your landing page!
+    // 1. Visit notification: only after a real interaction (scroll, tap, mouse, key)
+    const EVENTS = ["pointerdown", "touchstart", "keydown", "scroll", "mousemove"];
+    let started = false;
+
+    function onHuman() {
+      if (started) return;
+      started = true;
+      EVENTS.forEach(e => window.removeEventListener(e, onHuman));
+
+      setTimeout(async () => {
+        const geo = await getGeo();
+        if (isBadNetwork(geo)) {
+          console.log("Data center / Meta network. No notification sent.");
+          return;
+        }
+        if (seenRecently()) return;
+
+        sendDiscord(`👀 New visitor on your landing page!
 🕐 ${new Date().toLocaleString()}
 🌐 ${where}
 🌍 ${geo.country_name || "Unknown"}, ${geo.city || "Unknown"}
 🏢 Network: ${geo.org || "Unknown"}
 🔗 Referred: ${document.referrer || "Direct"}${app}`);
-    })();
+      }, 1500);
+    }
+    EVENTS.forEach(e => window.addEventListener(e, onHuman, { passive: true }));
+
+    // Fallback: someone who just looks at the page (no scroll or tap) still counts
+    // after 5 seconds, as long as the tab is actually visible.
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        onHuman();
+      } else {
+        document.addEventListener("visibilitychange", function once() {
+          if (document.visibilityState === "visible") {
+            document.removeEventListener("visibilitychange", once);
+            onHuman();
+          }
+        });
+      }
+    }, 5000);
 
     // 2. Track audio play
     let audioTracked = false;

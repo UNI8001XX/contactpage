@@ -103,7 +103,22 @@
 <script>
   const WEBHOOK_URL = "https://discord.com/api/webhooks/1566010391568580709/bwyUkxM1JzuaStaGnAeStRn0nkGJ0fL7QIICxw7cLuADu88_JLBWw94jp7ULNjsop-8P";
 
-  // Function to send the Discord message
+  // Link-preview bots, crawlers, scrapers, headless browsers
+  const BOT_UA = /bot|crawl|spider|slurp|headless|preview|facebookexternalhit|meta-externalagent|whatsapp\/|curl|wget|python|axios|node-fetch|go-http|java\/|lighthouse|pagespeed|gtmetrix|phantom|puppeteer|playwright|selenium|scrapy/i;
+
+  // Networks that are almost never real visitors (Meta, clouds, hosting providers)
+  const BOT_ORG = /facebook|meta platforms|\baws\b|amazon|google|microsoft|azure|digitalocean|oracle|alibaba|tencent|hetzner|\bovh|linode|vultr|contabo|leaseweb|scaleway|m247|datacamp|choopa|\bibm\b|rackspace/i;
+
+  // Real people browsing inside an app (kept, but labelled)
+  const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|TikTok|Snapchat|LinkedInApp/i;
+
+  const ua = navigator.userAgent;
+  if (BOT_UA.test(ua) || navigator.webdriver) {
+    console.log("Bot detected. No notification sent.");
+  } else {
+    init();
+  }
+
   function sendDiscord(message) {
     return fetch(WEBHOOK_URL, {
       method: "POST",
@@ -112,60 +127,87 @@
       body: JSON.stringify({
         username: "Landing Page",
         content: message,
-        allowed_mentions: { parse: [] } // stops @everyone/@here from referrers or data
+        allowed_mentions: { parse: [] }
       })
     }).catch(err => console.error("Discord error:", err));
   }
 
-  fetch("https://ipapi.co/json/")
-    .then(res => res.json())
-    .then(geo => {
-      // 1. Bot & Data Center Filter
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isBot = /bot|crawler|spider|crawling|headless|slurp|bing/i.test(userAgent);
-      
-      // Filter out AWS (Ashburn), Google Cloud, Azure, etc.
-      const isDataCenter = /amazon|aws|google|microsoft|azure|digitalocean|oracle/i.test(geo.org || "");
+  // Looks up location once, only when a real person did something
+  let geoPromise = null;
+  function getGeo() {
+    if (!geoPromise) {
+      geoPromise = fetch("https://ipapi.co/json/")
+        .then(r => r.json())
+        .catch(() => ({}));
+    }
+    return geoPromise;
+  }
 
-      if (isBot || isDataCenter) {
-        console.log("Bot or Data Center detected. No notification sent.");
-        return; 
-      }
+  function isBadNetwork(geo) {
+    return BOT_ORG.test(geo.org || "");
+  }
 
-      // 2. Initial Visit Notification
-      const msg = `👀 New visitor on your landing page!
+  // One visit message per browser every 30 minutes (ignores refreshes)
+  function seenRecently() {
+    try {
+      const last = Number(localStorage.getItem("lastVisitPing"));
+      if (last && Date.now() - last < 30 * 60 * 1000) return true;
+      localStorage.setItem("lastVisitPing", String(Date.now()));
+    } catch (e) {}
+    return false;
+  }
+
+  function init() {
+    const where = location.hostname + location.pathname + location.search;
+    const app = IN_APP.test(ua) ? "\n📱 In-app browser: " + (ua.match(IN_APP) || [""])[0] : "";
+
+    // 1. Visit notification: only after a real interaction (scroll, tap, mouse, key)
+    const EVENTS = ["pointerdown", "touchstart", "keydown", "scroll", "mousemove"];
+    let started = false;
+
+    function onHuman() {
+      if (started) return;
+      started = true;
+      EVENTS.forEach(e => window.removeEventListener(e, onHuman));
+
+      setTimeout(async () => {
+        const geo = await getGeo();
+        if (isBadNetwork(geo)) {
+          console.log("Data center / Meta network. No notification sent.");
+          return;
+        }
+        if (seenRecently()) return;
+
+        sendDiscord(`👀 New visitor on your landing page!
 🕐 ${new Date().toLocaleString()}
-🌍 ${geo.country_name}, ${geo.city}
-🏢 Network: ${geo.org || 'Unknown'}
-🔗 Referred: ${document.referrer || 'Direct'}`;
+🌐 ${where}
+🌍 ${geo.country_name || "Unknown"}, ${geo.city || "Unknown"}
+🏢 Network: ${geo.org || "Unknown"}
+🔗 Referred: ${document.referrer || "Direct"}${app}`);
+      }, 1500);
+    }
+    EVENTS.forEach(e => window.addEventListener(e, onHuman, { passive: true }));
 
-      sendDiscord(msg);
+    // 2. Track audio play
+    let audioTracked = false;
+    document.getElementById("voiceNote").addEventListener("play", async () => {
+      if (audioTracked) return;
+      audioTracked = true;
+      const geo = await getGeo();
+      if (isBadNetwork(geo)) return;
+      sendDiscord(`🔊 Someone is listening to your voice note! (${geo.city || "?"}, ${geo.country_code || "?"}) on ${location.hostname}`);
+    });
 
-      // 3. Track Audio Play
-      const audioPlayer = document.getElementById('voiceNote');
-      let audioTracked = false; 
-
-      audioPlayer.addEventListener('play', () => {
-        if (!audioTracked) {
-          sendDiscord(`🔊 Someone is listening to your voice note! (${geo.city}, ${geo.country_code})`);
-          audioTracked = true; 
-        }
-      });
-
-      // 4. Track LinkedIn Click
-      const linkedinBtn = document.getElementById('linkedinBtn');
-      let linkedinTracked = false;
-
-      linkedinBtn.addEventListener('click', () => {
-        if (!linkedinTracked) {
-          sendDiscord(`🔗 Someone clicked your LinkedIn profile! (${geo.city}, ${geo.country_code})`);
-          linkedinTracked = true;
-        }
-      });
-
-    })
-    .catch(err => console.error("Tracking error:", err));
+    // 3. Track LinkedIn click
+    let linkedinTracked = false;
+    document.getElementById("linkedinBtn").addEventListener("click", async () => {
+      if (linkedinTracked) return;
+      linkedinTracked = true;
+      const geo = await getGeo();
+      if (isBadNetwork(geo)) return;
+      sendDiscord(`🔗 Someone clicked your LinkedIn profile! (${geo.city || "?"}, ${geo.country_code || "?"}) on ${location.hostname}`);
+    });
+  }
 </script>
 </body>
 </html>
-

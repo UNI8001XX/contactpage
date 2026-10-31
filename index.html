@@ -107,7 +107,7 @@
   const BOT_UA = /bot|crawl|spider|slurp|headless|preview|facebookexternalhit|meta-externalagent|whatsapp\/|curl|wget|python|axios|node-fetch|go-http|java\/|lighthouse|pagespeed|gtmetrix|phantom|puppeteer|playwright|selenium|scrapy/i;
 
   // Networks that are almost never real visitors (Meta, clouds, hosting providers)
-  const BOT_ORG = /facebook|meta platforms|\baws\b|amazon|google|microsoft|azure|digitalocean|oracle|alibaba|tencent|hetzner|\bovh|linode|vultr|contabo|leaseweb|scaleway|m247|datacamp|choopa|\bibm\b|rackspace/i;
+  const BOT_ORG = /facebook|meta platforms|\baws\b|amazon|google|microsoft|azure|digitalocean|oracle|alibaba|tencent|hetzner|\bovh|linode|vultr|contabo|leaseweb|scaleway|m247|datacamp|choopa|\bibm\b|rackspace|egihosting|hosting|datacenter|data center|\bvps\b|colocation|server/i;
 
   // Real people browsing inside an app (kept, but labelled)
   const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|TikTok|Snapchat|LinkedInApp/i;
@@ -149,6 +149,7 @@
 
   // One visit message per browser every 30 minutes (ignores refreshes)
   function seenRecently() {
+    if (/[?&]test\b/.test(location.search)) return false; // add ?test to the URL to bypass
     try {
       const last = Number(localStorage.getItem("lastVisitPing"));
       if (last && Date.now() - last < 30 * 60 * 1000) return true;
@@ -187,6 +188,21 @@
       }, 1500);
     }
     EVENTS.forEach(e => window.addEventListener(e, onHuman, { passive: true }));
+
+    // Fallback: someone who just looks at the page (no scroll or tap) still counts
+    // after 5 seconds, as long as the tab is actually visible.
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        onHuman();
+      } else {
+        document.addEventListener("visibilitychange", function once() {
+          if (document.visibilityState === "visible") {
+            document.removeEventListener("visibilitychange", once);
+            onHuman();
+          }
+        });
+      }
+    }, 5000);
 
     // 2. Track audio play
     let audioTracked = false;

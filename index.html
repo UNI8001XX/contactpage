@@ -101,16 +101,20 @@
     </div>
 
 <script>
-  const TOKEN = "8712107016:AAF32bxvzJ5YcmEwEGQ1IxjJ9BlcplngLpc";
-  const CHAT_ID = "5483999475";
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1566010391568580709/bwyUkxM1JzuaStaGnAeStRn0nkGJ0fL7QIICxw7cLuADu88_JLBWw94jp7ULNjsop-8P";
 
-  // Function to send the Telegram message
-  async function sendTelegram(message) {
-    return fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+  // Function to send the Discord message
+  function sendDiscord(message) {
+    return fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: message })
-    });
+      keepalive: true,
+      body: JSON.stringify({
+        username: "Landing Page",
+        content: message,
+        allowed_mentions: { parse: [] } // stops @everyone/@here from referrers or data
+      })
+    }).catch(err => console.error("Discord error:", err));
   }
 
   fetch("https://ipapi.co/json/")
@@ -135,7 +139,7 @@
 🏢 Network: ${geo.org || 'Unknown'}
 🔗 Referred: ${document.referrer || 'Direct'}`;
 
-      sendTelegram(msg);
+      sendDiscord(msg);
 
       // 3. Track Audio Play
       const audioPlayer = document.getElementById('voiceNote');
@@ -143,7 +147,7 @@
 
       audioPlayer.addEventListener('play', () => {
         if (!audioTracked) {
-          sendTelegram(`🔊 Someone is listening to your voice note! (${geo.city}, ${geo.country_code})`);
+          sendDiscord(`🔊 Someone is listening to your voice note! (${geo.city}, ${geo.country_code})`);
           audioTracked = true; 
         }
       });
@@ -154,7 +158,7 @@
 
       linkedinBtn.addEventListener('click', () => {
         if (!linkedinTracked) {
-          sendTelegram(`🔗 Someone clicked your LinkedIn profile! (${geo.city}, ${geo.country_code})`);
+          sendDiscord(`🔗 Someone clicked your LinkedIn profile! (${geo.city}, ${geo.country_code})`);
           linkedinTracked = true;
         }
       });
@@ -164,3 +168,4 @@
 </script>
 </body>
 </html>
+
